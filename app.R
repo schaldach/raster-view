@@ -4,25 +4,12 @@ if(!require(pacman)) {
 library(pacman)
 p_load(shiny, bslib, ggplot2, terra)
 
-fileInputCustom <- function(inputId, label) {
-  tags$div(
-    class = "form-group shiny-input-container",
-    tags$label(label, `for` = inputId),
-    tags$input(
-      id = inputId,
-      type = "file",
-      class = "form-control custom-file-input", # Add class for custom binding
-      onchange = sprintf("Shiny.onInputChange('%s', null); Shiny.sendCustomMessage('uploadFile', {inputId: '%s'})", inputId, inputId)
-    )
-  )
-}
-
 # Define UI
 ui <- fluidPage(
   tags$head(
     tags$script(src = "customFileInput.js") # Include the JavaScript file
   ),
-  fileInputCustom("upload", "Select a File: "),
+  fileInput("upload", "Select a File: "),
   imageOutput("files")
 )
 

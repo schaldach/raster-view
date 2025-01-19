@@ -2,14 +2,15 @@ if(!require(pacman)) {
     install.packages("pacman", dependencies = TRUE);
 }
 library(pacman)
-p_load(shiny, bslib, ggplot2, terra)
+p_load(shiny, bslib, ggplot2, terra, ncdf4)
 
 # Define UI
-ui <- fluidPage(
-  tags$head(
-    tags$script(src = "customFileInput.js") # Include the JavaScript file
+ui <- page_sidebar(
+  title = "Raster View",
+  sidebar = sidebar(
+    fileInput("upload", "Select a File: "),
+    tableOutput("names")
   ),
-  fileInput("upload", "Select a File: "),
   imageOutput("files")
 )
 
@@ -24,7 +25,13 @@ server <- function(input, output, session) {
     req(input$upload)
     terra_raster <- terra::rast(input$upload$datapath)
     terra_raster[terra_raster > 10000] <- NA
-    terra::plot(terra_raster)
+    terra::plot(terra_raster[[1]])
+  })
+  
+  output$names <- renderTable({
+    req(input$upload)
+    terra_raster <- terra::rast(input$upload$datapath)
+    names(terra_raster)
   })
 }
 

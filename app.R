@@ -12,8 +12,6 @@ fileInputCustom <- function(inputId, label, value = 0) {
   )
 }
 
-activeLayerIndex <- 1
-
 # Define UI
 ui <- page_sidebar(
   title = "Raster View",
@@ -37,9 +35,10 @@ ui <- page_sidebar(
     width = 325,
     padding = 8
   ),
-  htmlOutput("text"),
   leafletOutput("rastermap")
 )
+
+# activeLayerIndex <- 1
 
 # Define server
 server <- function(input, output, session) {
@@ -48,34 +47,38 @@ server <- function(input, output, session) {
     print(input$upload)
   })
   
-  # div para não sofrer a estilização "flex column" e HTML para renderizar o texto em negrito
-  output$text <- renderUI({ 
-    HTML("Select a NetCDF file to visualize a layer")
-  })
-# pelo visto nao da pra ter 2 renders no mesmo output. como seria feito? depois farei tudo dentro de um observe imagino,
-  # sera que funcionaria?
-  output$text <- renderUI({ 
-    req(input$upload)
-    terra_raster <- terra::rast(input$upload$datapath)
-    layer_name <- names(terra_raster)[[activeLayerIndex]]
+  # sera que eu poderia usar o mesmo raster como variável? Ou teria que ler o caminho do arquivo e carregá-lo novamente?
+  # por enquanto vou fazer o jeito preguiçoso, mas considerar melhorar depois, pra usar o mesmo raster já
+  observeEvent(input$names_rows_selected, {
     
-    tags$div(HTML(paste0("Plotting layer <b>", layer_name, "</b>")))
-  })
-  
-  output$rastermap <- renderLeaflet({
-    req(input$upload)
-    terra_raster <- terra::rast(input$upload$datapath)[[activeLayerIndex]] # apenas primeira camada
-    terra_raster[terra_raster > 10000] <- NA
-
-    pal <- colorNumeric(palette = "viridis", domain = values(terra_raster), na.color = NA)
+    # if(activeLayerIndex==input$names_rows_selected)
+    # se o cara fez isso o cara é burro, simples, mas considerar adicionar depois (por isso a variavel la em cima
+    # ta comentada)
     
-    leaflet() %>%
-      addProviderTiles("OpenStreetMap") %>%
-      addRasterImage(terra_raster, colors = pal, opacity = 0.8) %>%
-      addLegend(pal = pal, values = values(terra_raster), title = "Raster Values") %>%
-      addControl("Raster Values", position = "bottomright") # %>%
-      # setMaxBounds(-180, -90, 180, 90)
+    # print(input$names_rows_selected)
+    activeLayerIndex <- input$names_rows_selected
+    
+    output$rastermap <- renderLeaflet({
+      req(input$upload)
+      terra_raster <- terra::rast(input$upload$datapath)[[activeLayerIndex]] # apenas primeira camada
+      terra_raster[terra_raster > 10000] <- NA
+      
+      pal <- colorNumeric(palette = "viridis", domain = values(terra_raster), na.color = NA)
+      
+      leaflet() %>%
+        addProviderTiles("OpenStreetMap") %>%
+        addRasterImage(terra_raster, colors = pal, opacity = 0.8) %>%
+        addLegend(pal = pal, values = values(terra_raster), title = "Raster Values") %>%
+        addControl(
+          tags$div(
+            # o raster passado para a tabela é o inteiro, mas aqui ele só tem 1 camada, já esta sendo cortado acima
+            HTML(paste0('<h3> Plotting layer <b>', names(terra_raster)[[1]], '</b></h3>'))
+          ), position = "bottomright")
+    })
   })
+  # acho que não é preciso o renderleaflet isolado quando todas as vezes que irei querer renderizar é quando
+  # alguma linha na tabela é selecionada
+  # da pra ver que isso deixa bem mais lento na 1 vez. mas por enquanto deixarei assim
   
   output$names <- renderDT({
     req(input$upload)

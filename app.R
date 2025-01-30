@@ -87,14 +87,12 @@ server <- function(input, output, session) {
   
   output$names <- renderDT({
     req(raster_data())  # Use stored raster
-    
-    terra_raster <- raster_data()
-    
+
     # Extract time values and convert to day-month-year format
-    time_values <- time(terra_raster)
+    time_values <- time(raster_data())
     formatted_time <- format(as.POSIXct(time_values, origin = "1970-01-01"), "%d/%m/%Y")
 
-    raster_info <- cbind(names(terra_raster), formatted_time, varnames(terra_raster), units(terra_raster))
+    raster_info <- cbind(names(raster_data()), formatted_time, varnames(raster_data()), units(raster_data()))
     colnames(raster_info) <- c("Layer", "Time", "Variable", "Unit")
 
     datatable(
@@ -105,7 +103,7 @@ server <- function(input, output, session) {
   })
 }
 
-options(shiny.maxRequestSize = 500 * 1024^2)
+options(shiny.maxRequestSize = 5000 * 1024^2)
 
 # Create a Shiny app object
 shinyApp(ui = ui, server = server)

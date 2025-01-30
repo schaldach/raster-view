@@ -42,9 +42,14 @@ ui <- page_sidebar(
 
 # Define server
 server <- function(input, output, session) {
-  observe({
+  
+  # Reactive value to store loaded raster
+  raster_data <- reactiveVal()
+  
+  # Load raster when file changes
+  observeEvent(input$upload, {
     req(input$upload)
-    print(input$upload)
+    raster_data(terra::rast(input$upload$datapath))
   })
   
   # sera que eu poderia usar o mesmo raster como variável? Ou teria que ler o caminho do arquivo e carregá-lo novamente?
@@ -59,8 +64,8 @@ server <- function(input, output, session) {
     activeLayerIndex <- input$names_rows_selected
     
     output$rastermap <- renderLeaflet({
-      req(input$upload)
-      terra_raster <- terra::rast(input$upload$datapath)[[activeLayerIndex]] # apenas primeira camada
+      req(raster_data()) # Use stored raster
+      terra_raster <- raster_data()[[activeLayerIndex]] # Subset loaded data
       terra_raster[terra_raster > 10000] <- NA
       
       pal <- colorNumeric(palette = "viridis", domain = values(terra_raster), na.color = NA)
@@ -81,8 +86,9 @@ server <- function(input, output, session) {
   # da pra ver que isso deixa bem mais lento na 1 vez. mas por enquanto deixarei assim
   
   output$names <- renderDT({
-    req(input$upload)
-    terra_raster <- terra::rast(input$upload$datapath)
+    req(raster_data())  # Use stored raster
+    
+    terra_raster <- raster_data()
     
     # Extract time values and convert to day-month-year format
     time_values <- time(terra_raster)
